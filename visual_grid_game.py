@@ -26,6 +26,16 @@ class VisualGridHuntGame:
             if pos_tuple != (0, 0) and pos_tuple not in self.walls:
                 self.food_positions.add(pos_tuple)
 
+        #Lab 01 - Generate toxic traps (hazards)
+        self.toxic_traps = set()
+        num_traps = max(3, self.width // 4)  # Example: scale traps with grid size
+        while len(self.toxic_traps) < num_traps:
+            tx = random.randint(0, self.width - 1)
+            ty = random.randint(0, self.height - 1)
+            trap_pos = (tx, ty)
+            if trap_pos != (0, 0) and trap_pos not in self.walls and trap_pos not in self.food_positions:
+                self.toxic_traps.add(trap_pos)
+
         # Generate adversarial opponents
         self.opponents = []
         while len(self.opponents) < num_opponents:
@@ -45,6 +55,7 @@ class VisualGridHuntGame:
             'opponent_positions': [list(op) for op in self.opponents],
             'smells_food': tuple(self.agent_pos) in self.food_positions,
             'hit_wall': tuple(self.agent_pos) in self.walls,
+            'smells_toxin': tuple(self.agent_pos) in self.toxic_traps,  # Lab 01 - NEW SENSOR
             'collision': self.collision,
             'score': self.score,
             'remaining_food': len(self.food_positions)
@@ -72,6 +83,11 @@ class VisualGridHuntGame:
         if tuple_pos in self.food_positions:
             self.food_positions.remove(tuple_pos)
             self.score += 20
+
+        # Lab 01 - Check if agent stepped on a toxic trap
+        if tuple_pos in self.toxic_traps:
+            self.score -= 15   # Lab 01 - Penalty for hitting a trap
+            self.collision = True
 
         for op in self.opponents:
             move = random.choice(['Up', 'Down', 'Left', 'Right', 'Stay'])
@@ -152,6 +168,18 @@ class GridGameGUI:
             y1 = (self.env.height - 1 - oy) * self.cell_size + offset
             self.canvas.create_rectangle(x1, y1, x1 + self.cell_size * 0.6, y1 + self.cell_size * 0.6, fill="#990000",
                                          outline="#7a0000")
+
+        # Lab 01 - Render traps as purple polygons
+        for tx, ty in self.env.toxic_traps:
+            offset = self.cell_size * 0.25
+            x1 = tx * self.cell_size + offset
+            y1 = (self.env.height - 1 - ty) * self.cell_size + offset
+            self.canvas.create_polygon(
+                x1, y1,
+                x1 + self.cell_size * 0.5, y1,
+                x1 + self.cell_size * 0.25, y1 + self.cell_size * 0.5,
+                fill="#9333ea", outline="#6b21a8"  # Purple tones
+            )
 
         ax, ay = self.env.agent_pos
         offset = self.cell_size * 0.15
