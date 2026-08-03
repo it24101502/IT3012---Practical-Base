@@ -49,13 +49,28 @@ class VisualGridHuntGame:
         self.steps = 0
         self.collision = False
 
+    #Lab 02 - Modify to set the Trap (Partial Observability)
     def get_percept(self) -> dict:
+        # Track facing direction (default "Up" if not set elsewhere)
+        facing = getattr(self, "facing", "Up")
+
+        x, y = self.agent_pos
+        if facing == "Up":
+            ahead = (x, min(self.height - 1, y + 1))
+        elif facing == "Down":
+            ahead = (x, max(0, y - 1))
+        elif facing == "Left":
+            ahead = (max(0, x - 1), y)
+        elif facing == "Right":
+            ahead = (min(self.width - 1, x + 1), y)
+        else:
+            ahead = (x, y)
+
         return {
-            'agent_pos': list(self.agent_pos),
-            'opponent_positions': [list(op) for op in self.opponents],
-            'smells_food': tuple(self.agent_pos) in self.food_positions,
-            'hit_wall': tuple(self.agent_pos) in self.walls,
-            'smells_toxin': tuple(self.agent_pos) in self.toxic_traps,  # Lab 01 - NEW SENSOR
+            'wall_ahead': ahead in self.walls,
+            'food_here': (x, y) in self.food_positions,
+            'toxin_here': (x, y) in self.toxic_traps,
+            'opponent_here': any(op == [x, y] for op in self.opponents),
             'collision': self.collision,
             'score': self.score,
             'remaining_food': len(self.food_positions)
