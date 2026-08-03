@@ -49,7 +49,7 @@ class VisualGridHuntGame:
         self.steps = 0
         self.collision = False
 
-    #Lab 02 - Modify to set the Trap (Partial Observability)
+    #Lab 02(Step 1.1) - Modify to set the Trap (Partial Observability)
     def get_percept(self) -> dict:
         # Track facing direction (default "Up" if not set elsewhere)
         facing = getattr(self, "facing", "Up")
@@ -122,6 +122,19 @@ class VisualGridHuntGame:
     def is_done(self) -> bool:
         return len(self.food_positions) == 0 or self.steps >= 60 or self.collision
 
+# lab 02(Step 1.2) - Implementing The Simple Reflex Agent (Implementation & Failure)
+class SimpleReflexAgent:
+    """A simple reflex agent with IF–THEN rules only."""
+
+    def sense_and_act(self, percept: dict) -> str:
+        if percept['food_here']:
+            return "Suck"
+        elif percept['wall_ahead']:
+            return "Left"
+        elif percept['toxin_here']:
+            return "Right"
+        else:
+            return "Forward"
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
