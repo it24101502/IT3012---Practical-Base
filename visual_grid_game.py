@@ -158,6 +158,103 @@ class SimpleReflexAgent:
         else:
             return 'move_forward'
 
+#Lab 02(Step 1.3)
+class ModelBasedAgent:
+    """A simple agent should now remember where it has been, realize it is in a loop, and choose an alternate path to escape."""
+
+    def __init__(self):
+        self.visited_cells = set()
+        self.position = (0, 0)   # believed starting position
+        self.facing = "Up"       # believed starting heading
+        self.last_action = None
+        self.visited_cells.add(self.position)
+        # Per-cell memory of which facings have already been found blocked here.
+        # This is what lets the agent escape a true corner (two boundaries/walls
+        # meeting), where "left vs right" alone isn't enough info.
+        self.blocked_at = {}
+ 
+    # --- helpers: relative directions, purely internal (no env access) ---
+    _LEFT_ORDER = ['Up', 'Left', 'Down', 'Right']   # counter-clockwise
+    _RIGHT_ORDER = ['Up', 'Right', 'Down', 'Left']  # clockwise
+    _DELTAS = {'Up': (0, 1), 'Down': (0, -1), 'Left': (-1, 0), 'Right': (1, 0)}
+ 
+    def _turned(self, order, facing):
+        idx = order.index(facing)
+        return order[(idx + 1) % 4]
+ 
+    def _opposite(self, facing):
+        return self._turned(self._LEFT_ORDER, self._turned(self._LEFT_ORDER, facing))
+    
+    def _cell_in_direction(self, pos, facing):
+        dx, dy = self._DELTAS[facing]
+        return (pos[0] + dx, pos[1] + dy)
+ 
+    def sense_and_act(self, percept: dict) -> str:
+        # 1) Update state (Transition & Sensor Model): record that we occupy
+        #    our believed position, based on the percept + last action taken.
+        self.visited_cells.add(self.position)
+ 
+        wall_ahead = percept['wall_ahead']
+        food_here = percept['food_here']
+        
+        if wall_ahead:
+            # Remember: at THIS cell, facing THIS direction, we're blocked.
+            self.blocked_at.setdefault(self.position, set()).add(self.facing)
+
+        if food_here:
+            self.last_action = 'suck'
+            return 'suck'  # position/facing unchanged
+ 
+        # 2) IF-THEN rules that QUERY the memory: score every direction we
+        #    could face from here using what we remember, then act on the
+        #    best one. This is still condition-action logic - just evaluated
+        #    over all 4 headings instead of a single hard-coded left/right
+        #    chain, which is what lets the agent escape a true corner
+        #    (two blocked sides) instead of oscillating between them.
+        blocked_here = self.blocked_at.get(self.position, set())
+        left_facing = self._turned(self._LEFT_ORDER, self.facing)
+        right_facing = self._turned(self._RIGHT_ORDER, self.facing)
+        opposite_facing = self._opposite(self.facing)
+
+        # Preference order when scores tie: keep going straight, then left,
+        # then right, then a U-turn - cheapest rotation first.
+        candidates = [self.facing, left_facing, right_facing, opposite_facing]
+
+        def score(facing):
+            if facing in blocked_here:
+                return -1  # known wall from here - never choose it
+            cell = self._cell_in_direction(self.position, facing)
+            return 2 if cell not in self.visited_cells else 1  # prefer new ground
+
+        best_facing = max(candidates, key=score)
+
+        if score(best_facing) == -1:
+            # Fully boxed in on every side we know of (rare) - turn to keep
+            # sensing; something will eventually look different as walls
+            # get remembered/refuted at neighboring cells.
+            action = 'turn_left'
+        elif best_facing == self.facing:
+            action = 'move_forward'
+        elif best_facing == left_facing:
+            action = 'turn_left'
+        elif best_facing == right_facing:
+            action = 'turn_right'
+        else:  # opposite_facing - takes two ticks; this starts the turn
+            action = 'turn_left'
+ 
+        # 3) Apply our own transition model so the belief state stays in sync
+        #    with the action we're about to take (mirrors what the real
+        #    environment will do in execute_action for the same action).
+        if action == 'turn_left':
+            self.facing = self._turned(self._LEFT_ORDER, self.facing)
+        elif action == 'turn_right':
+            self.facing = self._turned(self._RIGHT_ORDER, self.facing)
+        elif action == 'move_forward':
+            self.position = self._cell_in_direction(self.position, self.facing)
+ 
+        self.last_action = action
+        return action
+
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
 
@@ -168,8 +265,8 @@ class GridGameGUI:
         self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents,
                                       custom_walls=walls)
 
-        self.agent = SimpleReflexAgent(self.env)  # Lab 02(Step 1.2) - drives the simulation via sense_and_act
-
+        self.agent = ModelBasedAgent()  # Lab 02(Step 1.3) - swap SimpleReflexAgent(self.env) for ModelBasedAgent() to compare the two.
+        
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
         max_canvas_dim = 600
         self.cell_size = max(20, min(max_canvas_dim // self.env.width, max_canvas_dim // self.env.height))
