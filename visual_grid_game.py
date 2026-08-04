@@ -78,6 +78,25 @@ class VisualGridHuntGame:
 
     def execute_action(self, action: str):
         self.steps += 1
+
+        # Lab 02(Step 1.2)--- Reflex-agent style actions: rotate facing, move in facing direction, or suck food ---
+        if action == 'turn_left':
+            order = ['Up', 'Left', 'Down', 'Right']  # counter-clockwise rotation
+            idx = order.index(self.facing)
+            self.facing = order[(idx + 1) % 4]
+            return  # turning does not consume a movement step's collision/food/opponent logic
+
+        if action == 'suck':
+            tuple_pos = tuple(self.agent_pos)
+            if tuple_pos in self.food_positions:
+                self.food_positions.remove(tuple_pos)
+                self.score += 20
+            self._advance_opponents()
+            return
+
+        if action == 'move_forward':
+            action = self.facing  # translate facing into an Up/Down/Left/Right move
+        
         new_pos = list(self.agent_pos)
 
         if action == 'Up':
@@ -122,19 +141,22 @@ class VisualGridHuntGame:
     def is_done(self) -> bool:
         return len(self.food_positions) == 0 or self.steps >= 60 or self.collision
 
-# lab 02(Step 1.2) - Implementing The Simple Reflex Agent (Implementation & Failure)
+#Lab 02(Step 1.2)
 class SimpleReflexAgent:
-    """A simple reflex agent with IF–THEN rules only."""
+    """A simple reflex agent get trapped in a corner or a U-shaped wall, infinitely repeating a cycle """
+
+    def __init__(self, env: VisualGridHuntGame):
+        self.env = env
+        self.env.facing = "Up"  # Default facing direction
 
     def sense_and_act(self, percept: dict) -> str:
+        # Strictly IF-THEN condition-action rules - no memory of past percepts is used.
         if percept['food_here']:
-            return "Suck"
+            return 'suck'
         elif percept['wall_ahead']:
-            return "Left"
-        elif percept['toxin_here']:
-            return "Right"
+            return 'turn_left'
         else:
-            return "Forward"
+            return 'move_forward'
 
 class GridGameGUI:
     """Tkinter wrapper that dynamically scales cell sizes to keep larger grids on screen."""
@@ -145,6 +167,8 @@ class GridGameGUI:
 
         self.env = VisualGridHuntGame(width=width, height=height, num_food=num_food, num_opponents=num_opponents,
                                       custom_walls=walls)
+
+        self.agent = SimpleReflexAgent(self.env)  # Lab 02(Step 1.2) - drives the simulation via sense_and_act
 
         # Dynamically calculate cell size so the total canvas fits nicely within a 600x600 window ceiling
         max_canvas_dim = 600
@@ -219,13 +243,30 @@ class GridGameGUI:
     def run_loop(self):
         self.btn.config(state="disabled")
 
+        # Lab 02(Step1.2) - SimpleReflexAgent - the agent itself is stateless. We only use it here to detect and report the infinite-loop failure the exercise asks about.
+        
+        recent_actions = []
+        cycle_len = 8  # how many recent (state, action) pairs to watch for a repeat
+        
         def step():
             if not self.env.is_done():
-                action = random.choice(['Up', 'Down', 'Left', 'Right'])
+                percept = self.env.get_percept()
+                action = self.agent.sense_and_act(percept)
                 self.env.execute_action(action)
 
+                # Track (position, facing, action) to detect the agent repeating itself
+                signature = (tuple(self.env.agent_pos), self.env.facing, action)
+                recent_actions.append(signature)
+                if len(recent_actions) > cycle_len:
+                    recent_actions.pop(0)
+                stuck = len(recent_actions) == cycle_len and len(set(recent_actions)) <= cycle_len // 2
+
                 self.draw_grid()
-                self.label.config(text=f"Score: {self.env.score} | Steps: {self.env.steps} | Action: {action}")
+                status = "  |  STUCK IN A LOOP (no memory of past states)" if stuck else ""
+                self.label.config(
+                    text=f"Score: {self.env.score} | Steps: {self.env.steps} | "
+                         f"Facing: {self.env.facing} | Action: {action}{status}"
+                )
                 self.root.after(250, step)
             else:
                 end_text = f"Collision! Game Over! Final Score: {self.env.score}" if self.env.collision else f"Finished! Final Score: {self.env.score}"
@@ -233,7 +274,6 @@ class GridGameGUI:
                 self.btn.config(state="normal")
 
         step()
-
 
 if __name__ == "__main__":
     root = tk.Tk()
