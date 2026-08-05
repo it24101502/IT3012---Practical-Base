@@ -10,6 +10,7 @@ class VisualGridHuntGame:
         self.width = width
         self.height = height
         self.agent_pos = [0, 0]  # Starting position (x, y)
+        self.facing = "Up"  # Default facing direction
 
         if custom_walls is not None:
             self.walls = set(custom_walls)
@@ -67,7 +68,7 @@ class VisualGridHuntGame:
             ahead = (x, y)
 
         return {
-            'wall_ahead': ahead in self.walls,
+            'wall_ahead': (ahead in self.walls) or (ahead == (x, y)),
             'food_here': (x, y) in self.food_positions,
             'toxin_here': (x, y) in self.toxic_traps,
             'opponent_here': any(op == [x, y] for op in self.opponents),
@@ -82,6 +83,12 @@ class VisualGridHuntGame:
         # Lab 02(Step 1.2)--- Reflex-agent style actions: rotate facing, move in facing direction, or suck food ---
         if action == 'turn_left':
             order = ['Up', 'Left', 'Down', 'Right']  # counter-clockwise rotation
+            idx = order.index(self.facing)
+            self.facing = order[(idx + 1) % 4]
+            return  # turning does not consume a movement step's collision/food/opponent logic
+
+        if action == 'turn_right':
+            order = ['Up', 'Right', 'Down', 'Left']  # clockwise rotation
             idx = order.index(self.facing)
             self.facing = order[(idx + 1) % 4]
             return  # turning does not consume a movement step's collision/food/opponent logic
