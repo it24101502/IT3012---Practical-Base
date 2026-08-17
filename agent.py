@@ -17,10 +17,44 @@ class GreedyGridAgent:
 
 #Lab 03(Step 1.2) - Create class
 class SearchAgent:
+    #Lab 03(Step 1.3) - initiate   
     def __init__(self):
         self.plan = []
-        self.active_algo = "BFS"
+        self.active_algo = "UCS"
     
+    #Lab 03(Step 1.3) -
+    def sense_and_act(self, percept):
+        current_pos = percept['agent_pos']
+        all_food = percept['all_food']
+        grid_size = percept['grid_size']
+        walls = percept['walls']
+
+        if not self.plan:
+            target_food = self.find_closest_food(current_pos,all_food)
+            
+            if target_food is None:
+                return "UP"
+            
+            if self.active_algo == "BFS":
+                self.plan = self.bfs_search(current_pos,target_food,grid_size,walls)
+            elif self.active_algo == "DFS":
+                self.plan = self.dfs_search(current_pos,target_food,grid_size,walls)
+            elif self.active_algo == "UCS":
+                self.plan = self.ucs_search(current_pos,target_food,grid_size,walls)
+
+        if self.plan:
+            return self.plan.pop(0)
+
+        return "UP"
+
+    #Lab 03(Step 1.3) - Finds the nearest food pellet using Manhattan distance.
+    def find_closest_food(self, start, all_food):
+        if not all_food:
+            return None
+
+        return min(all_food,key=lambda food: abs(food[0] - start[0]) + abs(food[1] - start[1]))
+
+    #Lab 03(Step 1.2) - get neigbours
     def get_neighbors(self, state, grid_size, walls):
         x, y = state
 
@@ -39,7 +73,7 @@ class SearchAgent:
 
         return neighbors
 
-    # Implement BFS
+    #Lab 03(Step 1.2) - Implement BFS
     def bfs_search(self, start, goal, grid_size, walls):
         frontier = deque([(start, [])])
         reached = {start}
@@ -56,7 +90,7 @@ class SearchAgent:
 
         return []
 
-    # Implement DFS
+    #Lab 03(Step 1.2) - Implement DFS
     def dfs_search(self, start, goal, grid_size, walls):
         frontier = [(start, [])]
         reached = {start}
@@ -73,7 +107,7 @@ class SearchAgent:
 
         return []
 
-    # Implement UCS
+    #Lab 03(Step 1.2) - Implement UCS
     def ucs_search(self, start, goal, grid_size, walls):
         frontier = []
         heapq.heappush(frontier,(0, start, []))
