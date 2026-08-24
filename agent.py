@@ -37,6 +37,54 @@ class SearchAgent:
 
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
+    #Lab 04(Step 1.2) - Implementing A* Search
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+        open_list = []
+        reached_states = set()
+
+        if heuristic_type == 'manhattan':
+            h = self.manhattan_distance(start_pos, goal_pos)
+        else:
+            h = self.euclidean_distance(start_pos, goal_pos)
+        
+        heapq.heappush(open_list,(h, 0, start_pos, []))
+
+        while open_list:
+            f_cost, g_cost, current_pos, path_taken = \
+                heapq.heappop(open_list)
+            if current_pos == goal_pos:
+                return path_taken
+            reached_states.add(current_pos)
+            directions = [
+                (-1, 0),  # Up
+                (1, 0),   # Down
+                (0, -1),  # Left
+                (0, 1)    # Right
+            ]
+
+            for dx, dy in directions:
+                new_pos = (current_pos[0] + dx,current_pos[1] + dy)
+
+                if not ( 0 <= new_pos[0] < grid_size[0] and 0 <= new_pos[1] < grid_size[1]):
+                    continue
+                if new_pos in walls:
+                    continue
+                if new_pos in reached_states:
+                    continue
+                
+                new_g = g_cost + 1
+
+                if heuristic_type == 'manhattan':
+                    h = self.manhattan_distance(new_pos,goal_pos)
+                else:
+                    h = self.euclidean_distance(new_pos,goal_pos)
+
+                new_f = new_g + h
+
+                heapq.heappush(open_list,(new_f,new_g,new_pos,path_taken + [new_pos]))
+
+        return []
+
     #Lab 03(Step 1.3) -
     def sense_and_act(self, percept):
         current_pos = percept['agent_pos']
@@ -143,12 +191,3 @@ class SearchAgent:
                     heapq.heappush(frontier,(cost + 1,next_state,path + [action]))
 
         return []
-
-
-agent = SearchAgent()
-
-print("Manhattan Distance:",
-      agent.manhattan_distance((0, 0), (3, 4)))
-
-print("Euclidean Distance:",
-      agent.euclidean_distance((0, 0), (3, 4)))
