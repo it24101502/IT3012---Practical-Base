@@ -21,7 +21,7 @@ class SearchAgent:
     #Lab 03(Step 1.3) - initiate   
     def __init__(self):
         self.plan = []
-        self.active_algo = "UCS"
+        self.active_algo = "AStar" # Lab 04 - implement A*
     
     #Lab 04(Step 1.1) - Implementing the Heuristic Functions
     def manhattan_distance(self, pos, goal):
@@ -56,13 +56,13 @@ class SearchAgent:
                 return path_taken
             reached_states.add(current_pos)
             directions = [
-                (-1, 0),  # Up
-                (1, 0),   # Down
-                (0, -1),  # Left
-                (0, 1)    # Right
+                ("Left", (-1, 0)),
+                ("Right", (1, 0)),
+                ("Down", (0, -1)),
+                ("Up", (0, 1))
             ]
 
-            for dx, dy in directions:
+            for action, (dx, dy) in directions:
                 new_pos = (current_pos[0] + dx,current_pos[1] + dy)
 
                 if not ( 0 <= new_pos[0] < grid_size[0] and 0 <= new_pos[1] < grid_size[1]):
@@ -81,7 +81,7 @@ class SearchAgent:
 
                 new_f = new_g + h
 
-                heapq.heappush(open_list,(new_f,new_g,new_pos,path_taken + [new_pos]))
+                heapq.heappush(open_list,(new_f,new_g,new_pos,path_taken + [action]))
 
         return []
 
@@ -96,7 +96,7 @@ class SearchAgent:
             target_food = self.find_closest_food(current_pos,all_food)
             
             if target_food is None:
-                return "UP"
+                return "Up"
             
             if self.active_algo == "BFS":
                 self.plan = self.bfs_search(current_pos,target_food,grid_size,walls)
@@ -104,6 +104,8 @@ class SearchAgent:
                 self.plan = self.dfs_search(current_pos,target_food,grid_size,walls)
             elif self.active_algo == "UCS":
                 self.plan = self.ucs_search(current_pos,target_food,grid_size,walls)
+            elif self.active_algo == "AStar": #Lab 04
+                self.plan = self.astar_search(current_pos,target_food,walls,grid_size, heuristic_type="manhattan")
 
         if self.plan:
             return self.plan.pop(0)
@@ -122,10 +124,10 @@ class SearchAgent:
         x, y = state
 
         possible_moves = {
-            "UP": (x, y - 1),
-            "DOWN": (x, y + 1),
-            "LEFT": (x - 1, y),
-            "RIGHT": (x + 1, y)
+            "Up": (x, y + 1),
+            "Down": (x, y - 1),
+            "Left": (x - 1, y),
+            "Right": (x + 1, y)
         }
 
         neighbors = []
