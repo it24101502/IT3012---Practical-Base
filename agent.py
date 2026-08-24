@@ -1,5 +1,6 @@
 # agent.py
 import random
+import math
 from collections import deque
 import heapq
 
@@ -22,6 +23,20 @@ class SearchAgent:
         self.plan = []
         self.active_algo = "UCS"
     
+    #Lab 04(Step 1.1) - Implementing the Heuristic Functions
+    def manhattan_distance(self, pos, goal):
+        x1, y1 = pos
+        x2, y2 = goal
+
+        return abs(x1 - x2) + abs(y1 - y2)
+
+    #Lab 04(Step 1.1) - Implementing the Heuristic Functions
+    def euclidean_distance(self, pos, goal):
+        x1, y1 = pos
+        x2, y2 = goal
+
+        return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
     #Lab 03(Step 1.3) -
     def sense_and_act(self, percept):
         current_pos = percept['agent_pos']
@@ -129,4 +144,11 @@ class SearchAgent:
 
         return []
 
-    
+
+agent = SearchAgent()
+
+print("Manhattan Distance:",
+      agent.manhattan_distance((0, 0), (3, 4)))
+
+print("Euclidean Distance:",
+      agent.euclidean_distance((0, 0), (3, 4)))
