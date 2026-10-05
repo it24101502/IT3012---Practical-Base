@@ -37,22 +37,3 @@ class KnowledgeBase:
                     if all(p in self.facts for p in premises):
                         self.facts.add(conclusion)
                         new_facts_added = True
-
-
-if __name__ == "__main__":
-    kb = KnowledgeBase()
-
-    # Initial Facts
-    kb.tell_fact("TargetVisible")
-    kb.tell_fact("HasAmmo")
-
-    # Rules
-    kb.tell_rule(["TargetVisible", "HasAmmo"], "CanTarget")
-    kb.tell_rule(["CanTarget"], "AttackReady")
-
-    print("Initial Facts:", kb.facts)
-
-    # Run Forward Chaining
-    kb.forward_chain()
-
-    print("Facts after Forward Chaining:", kb.facts)

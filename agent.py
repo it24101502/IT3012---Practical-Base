@@ -3,6 +3,7 @@ import random
 import math
 from collections import deque
 import heapq
+from logic_engine import KnowledgeBase  # Lab 07(Step 3.1): Import KnowledgeBase
 
 class GreedyGridAgent:
     """A simple agent that tries to move around systematically to clear the grid."""
@@ -22,6 +23,9 @@ class SearchAgent:
     def __init__(self):
         self.plan = []
         self.active_algo = "AStar" # Lab 04 - implement A*
+        self.kb = KnowledgeBase() #Lab 07(Step 3.1): Initialize Knowledge Base and register rules
+        self.kb.tell_rule(["TargetVisible", "HasDust"], "SafeToEngage") #Lab 07(Step 3.1): Rule 1: TargetVisible AND HasDust => SafeToEngage
+        self.kb.tell_rule(["SafeToEngage", "BloodseekerMissing"], "Retreat")  #Lab 07(Step 3.1): Rule 2: SafeToEngage AND BloodseekerMissing => Retreat
     
     #Lab 04(Step 1.1) - Implementing the Heuristic Functions
     def manhattan_distance(self, pos, goal):
