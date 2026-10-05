@@ -1,3 +1,4 @@
+# logic_engine.py
 class KnowledgeBase:
     """
     A declarative Knowledge Base (KB) that stores facts and Horn Clause rules.
