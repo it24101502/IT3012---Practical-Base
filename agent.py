@@ -42,7 +42,12 @@ class SearchAgent:
         return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
     #Lab 04(Step 1.2) - Implementing A* Search
-    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan'):
+    #Lab 07(Step 3.2): Updated astar_search with KB Feasibility Check)
+    def astar_search(self, start_pos, goal_pos, walls, grid_size, heuristic_type='manhattan', tile_facts=None):
+        # 1. Handle default tile_facts if None
+        if tile_facts is None:
+            tile_facts = {}
+        
         open_list = []
         reached_states = set()
 
@@ -76,6 +81,21 @@ class SearchAgent:
                 if new_pos in reached_states:
                     continue
                 
+                # Step 3.2: Check Logical Feasibility via Knowledge Base
+                # 3. Clear KB facts before evaluating successor tile
+                self.kb.clear_facts()
+
+                # 4. Feed facts for the new_pos tile into the KB
+                for fact in tile_facts.get(new_pos, []):
+                    self.kb.tell_fact(fact)
+
+                # 5. Execute forward chaining engine
+                self.kb.forward_chain()
+
+                # 6. Check if 'Retreat' is deduced -> Infeasible tile, skip adding to open_list
+                if 'Retreat' in self.kb.facts:
+                    continue
+                
                 new_g = g_cost + 1
 
                 if heuristic_type == 'manhattan':
@@ -95,6 +115,7 @@ class SearchAgent:
         all_food = percept['all_food']
         grid_size = percept['grid_size']
         walls = percept['walls']
+        tile_facts = percept.get('tile_facts', {}) #Lab 07
 
         if not self.plan:
             target_food = self.find_closest_food(current_pos,all_food)
@@ -109,7 +130,7 @@ class SearchAgent:
             elif self.active_algo == "UCS":
                 self.plan = self.ucs_search(current_pos,target_food,grid_size,walls)
             elif self.active_algo == "AStar": #Lab 04
-                self.plan = self.astar_search(current_pos,target_food,walls,grid_size, heuristic_type="manhattan")
+                self.plan = self.astar_search(current_pos,target_food,walls,grid_size, heuristic_type="manhattan", tile_facts=tile_facts) #Lab 07
 
         if self.plan:
             return self.plan.pop(0)
