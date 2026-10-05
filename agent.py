@@ -115,7 +115,11 @@ class SearchAgent:
         all_food = percept['all_food']
         grid_size = percept['grid_size']
         walls = percept['walls']
-        tile_facts = percept.get('tile_facts', {}) #Lab 07
+        # Lab 07(Step 3.3): Define sample tile facts
+        tile_facts = {
+            (1, 0): ['TargetVisible', 'HasDust', 'BloodseekerMissing'],  # Deduces Retreat -> Infeasible/Blocked
+            (0, 1): ['TargetVisible', 'HasDust'],                        # Deduces SafeToEngage only -> Feasible/Allowed
+        }
 
         if not self.plan:
             target_food = self.find_closest_food(current_pos,all_food)
