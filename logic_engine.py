@@ -21,21 +21,38 @@ class KnowledgeBase:
         """Empties the facts set."""
         self.facts.clear()
 
-'''
+    def forward_chain(self):
+        """
+        Data-Driven Forward Chaining algorithm.
+        Iterates through rules and infers new facts until no more facts can be deduced.
+        """
+        new_facts_added = True
+
+        while new_facts_added:
+            new_facts_added = False
+
+            for premises, conclusion in self.rules:
+                if conclusion not in self.facts:
+                    # Modus Ponens Check: check if all premises are present in facts
+                    if all(p in self.facts for p in premises):
+                        self.facts.add(conclusion)
+                        new_facts_added = True
+
+
 if __name__ == "__main__":
     kb = KnowledgeBase()
 
-    # Add facts
+    # Initial Facts
     kb.tell_fact("TargetVisible")
     kb.tell_fact("HasAmmo")
 
-    # Add a Horn clause rule: IF TargetVisible AND HasAmmo THEN CanShoot
-    kb.tell_rule(["TargetVisible", "HasAmmo"], "CanShoot")
+    # Rules
+    kb.tell_rule(["TargetVisible", "HasAmmo"], "CanTarget")
+    kb.tell_rule(["CanTarget"], "AttackReady")
 
-    print("Facts:", kb.facts)
-    print("Rules:", kb.rules)
+    print("Initial Facts:", kb.facts)
 
-    # Clear facts
-    kb.clear_facts()
-    print("Facts after clearing:", kb.facts)
-'''
+    # Run Forward Chaining
+    kb.forward_chain()
+
+    print("Facts after Forward Chaining:", kb.facts)
